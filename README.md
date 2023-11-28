@@ -1,8 +1,7 @@
 # Cine Link Backend
 
----
 
-### Backend server for online movie ticket booking site
+### Backend REST server for online movie ticket booking site
 
 **Framework Used**
 
