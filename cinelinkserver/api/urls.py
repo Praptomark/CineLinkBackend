@@ -58,10 +58,10 @@ urlpatterns = [
     path('seat-to-cartproducts/', AddSeatToCartProductsView.as_view(), name='seat-to-products'),
 
     path('add-cart-products/', AddCartProductsView.as_view(), name='add-cart-products'),
-    path('delete-cart-products/<int:pk>/', CartProductsDeleteView.as_view(), name='delete-cart-product'),
+    path('delete-cart-products/<int:pk>', CartProductsDeleteView.as_view(), name='delete-cart-product'),
     path('cart/', CartAPIView.as_view(), name='cart-api'),
     path('booking/', CreateBookedView.as_view(), name='booking'),
     
     path('tickets/', TicketsAPIView.as_view(), name='tickets-api'),
-    path('delete-book/<int:pk>/', BookedDeleteView.as_view(), name='booked-delete'),
+    path('delete-book/<int:pk>', BookedDeleteView.as_view(), name='booked-delete'),
 ]
