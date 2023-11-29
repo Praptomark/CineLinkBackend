@@ -309,3 +309,11 @@ class TicketsAPIView(RetrieveAPIView):
     def get_object(self):
         # Assuming you want to retrieve the ticket for the currently authenticated user
         return Tickets.objects.get(user=self.request.user)
+
+class UserUpdateView(UpdateAPIView):
+    serializer_class = UserSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self):
+        return self.request.user
