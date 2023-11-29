@@ -77,6 +77,16 @@ class SeatsAPIView(APIView): # Seat Lists
         serializer = SeatSerializer(seats, many=True)
         return Response(serializer.data)
 
+class SeatAPIView(RetrieveAPIView):
+    queryset = Seats.objects.all()
+    serializer_class = SeatSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        seat_id = self.kwargs.get('id')
+        return Seats.objects.get(pk=seat_id)
+
 ####################################################################################################
 # For Admin
 class MovieCreateView(CreateAPIView): # Movie Create

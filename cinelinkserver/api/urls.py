@@ -22,7 +22,8 @@ from .views import (
     CartAPIView,
     CreateBookedView,
     TicketsAPIView,
-    BookedDeleteView
+    BookedDeleteView,
+    SeatAPIView
     )
 
 urlpatterns = [
@@ -39,7 +40,8 @@ urlpatterns = [
     path('schedules/', SchedulesAPIView.as_view(), name='schedule-list'),
     path('schedules/<int:id>/', SchedulesID_APIView.as_view(), name='schedule-detail'),
 
-    path('seats/', SeatsAPIView.as_view(), name='schedule-detail'),
+    path('seats/', SeatsAPIView.as_view(), name='seats-list'),
+    path('seats/<int:id>', SeatAPIView.as_view(), name='seat-by-id'),
 
     # For Admin#####################################################################################
     path('movie-create/', MovieCreateView.as_view(), name='movie-create'),
