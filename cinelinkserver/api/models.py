@@ -38,10 +38,12 @@ class Schedules(models.Model):
 
     def __init__(self, *args, **kwargs):
         super(Schedules, self).__init__(*args, **kwargs)
-        current_time = timezone.localtime().time()
+        self.check_and_delete_schedule()
 
-        # Check if the end_time is earlier than the current time
-        if self.end_time and self.end_time < current_time:
+    def check_and_delete_schedule(self):
+        local_time = timezone.now().time()
+
+        if local_time > self.end_time:
             self.delete()
 
     def __str__(self) -> str:
