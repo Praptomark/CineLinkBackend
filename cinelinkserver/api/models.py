@@ -83,12 +83,6 @@ class Booked(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     is_booked = models.BooleanField(default=True)
-
-    # def save(self, *args, **kwargs):
-    #     super().save(*args, **kwargs)
-    #     if self.is_booked:
-    #         # Generate a Ticket when is_booked is True
-    #         Tickets.objects.create(user=self.user, booked=self)
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
