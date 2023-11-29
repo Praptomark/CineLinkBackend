@@ -84,26 +84,26 @@ class Booked(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     is_booked = models.BooleanField(default=True)
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if self.is_booked:
-            # Generate a Ticket when is_booked is True
-            Tickets.objects.create(user=self.user, booked=self)
-    
     # def save(self, *args, **kwargs):
     #     super().save(*args, **kwargs)
-
-    #     # Check if there is no corresponding Tickets instance
-    #     if not hasattr(self, 'tickets'):
-    #         # Create a Tickets instance and link it to the Booked instance
+    #     if self.is_booked:
+    #         # Generate a Ticket when is_booked is True
     #         Tickets.objects.create(user=self.user, booked=self)
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        # Check if there is no corresponding Tickets instance
+        if not hasattr(self, 'tickets'):
+            # Create a Tickets instance and link it to the Booked instance
+            Tickets.objects.create(user=self.user, booked=self)
 
     def __str__(self) -> str:
         return f"{self.user.username} - Booked: {self.is_booked}"
 
 ####################################################################################################
 class Tickets(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     booked = models.ForeignKey(Booked, on_delete=models.CASCADE)
     expired = models.BooleanField(default=False)
     ticket_number = models.CharField(unique=True, max_length=15)
