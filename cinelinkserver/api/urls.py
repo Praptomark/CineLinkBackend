@@ -26,13 +26,13 @@ from .views import (
     )
 
 urlpatterns = [
-    # Authentication section
+    # Authentication section########################################################################
     path('register/', RegistrationAPIView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='knox_login'),
     path('logout/', knox_views.LogoutView.as_view(), name='knox_logout'),
     path('logoutall/', knox_views.LogoutAllView.as_view(), name='knox_logoutall'),
 
-    # For All
+    # For All#######################################################################################
     path("movies/", MovieAPIView.as_view(), name="movies"),
     path("movies/<int:movie_id>", MovieAPIView.as_view(), name="movies"),
 
@@ -41,7 +41,7 @@ urlpatterns = [
 
     path('seats/', SeatsAPIView.as_view(), name='schedule-detail'),
 
-    # For Admin
+    # For Admin#####################################################################################
     path('movie-create/', MovieCreateView.as_view(), name='movie-create'),
     path('movie-update/<int:pk>', MovieUpdateView.as_view(), name='movie-update'),
     path('movie-delete/<int:pk>', MovieDeleteView.as_view(), name='movie-delete'),
@@ -54,8 +54,8 @@ urlpatterns = [
     path('schedule-update/<int:pk>', ScheduleUpdateView.as_view(), name='schedule-update'),
     path('schedule-delete/<int:pk>', ScheduleDeleteView.as_view(), name='schedule-delete'),
     
-    # For Authenticated
-    path('seat-to-products/', AddSeatToCartProductsView.as_view(), name='seat-to-products'),
+    # For Authenticated#############################################################################
+    path('seat-to-cartproducts/', AddSeatToCartProductsView.as_view(), name='seat-to-products'),
 
     path('add-cart-products/', AddCartProductsView.as_view(), name='add-cart-products'),
     path('delete-cart-products/<int:pk>/', CartProductsDeleteView.as_view(), name='delete-cart-product'),
