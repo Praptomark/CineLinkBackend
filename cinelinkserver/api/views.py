@@ -13,6 +13,7 @@ from .models import Movies, Schedules, Seats, HallRoom, Cart, CartProducts, Book
 from django.contrib.auth import get_user_model
 import stripe
 from django.http import JsonResponse
+from django.contrib.auth.hashers import make_password
 
 User = get_user_model()
 stripe.api_key = "your_stripe_secret_key"
@@ -25,6 +26,9 @@ class RegistrationAPIView(APIView): # For Sign up
     def post(self, request, format=None):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
+            # Hash the password before saving
+            serializer.validated_data['password'] = make_password(serializer.validated_data['password'])
+            
             user = serializer.save()
             _, token = AuthToken.objects.create(user)
             return Response({
