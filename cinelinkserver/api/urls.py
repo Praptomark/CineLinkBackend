@@ -72,5 +72,5 @@ urlpatterns = [
 
     path('user/', UserDetailsView.as_view(), name='user-details'),
     path('update-user/', UserUpdateView.as_view(), name='user-update'),
-    path('api/user/delete/', UserDeleteView.as_view(), name='user-delete'),
+    path('delete-user/', UserDeleteView.as_view(), name='user-delete'),
 ]
