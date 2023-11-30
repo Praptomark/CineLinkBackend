@@ -25,6 +25,8 @@ from .views import (
     BookedDeleteView,
     SeatAPIView,
     UserUpdateView,
+    UserDetailsView,
+    UserDeleteView
     )
 
 urlpatterns = [
@@ -68,5 +70,7 @@ urlpatterns = [
     path('tickets/', TicketsAPIView.as_view(), name='tickets-api'),
     path('delete-book/<int:pk>', BookedDeleteView.as_view(), name='booked-delete'),
 
+    path('user/', UserDetailsView.as_view(), name='user-details'),
     path('update-user/', UserUpdateView.as_view(), name='user-update'),
+    path('api/user/delete/', UserDeleteView.as_view(), name='user-delete'),
 ]

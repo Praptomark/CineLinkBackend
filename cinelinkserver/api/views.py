@@ -321,3 +321,24 @@ class UserUpdateView(UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+class UserDetailsView(RetrieveAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user
+
+class UserDeleteView(DestroyAPIView):
+    serializer_class = UserSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+    def perform_destroy(self, instance):
+        # Optionally, you can invalidate the user's tokens on deletion
+        AuthToken.objects.filter(user=instance).delete()
+        instance.delete()
