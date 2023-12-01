@@ -43,8 +43,9 @@ class Schedules(models.Model):
     def check_and_delete_schedule(self):
         local_time = timezone.now().time()
 
-        if local_time > self.end_time:
+        if self.end_time and local_time > self.end_time:
             self.delete()
+
 
     def __str__(self) -> str:
         return f"{self.pk} - {self.movie.title} - {self.hallroom.hallroom_name} - Time:({self.start_time} - {self.end_time})"
