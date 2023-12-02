@@ -10,7 +10,7 @@ from django.dispatch import receiver
 ####################################################################################################
 class Movies(models.Model):
     title = models.CharField(max_length=255)
-    poster = models.ImageField(upload_to="movie_poster/")
+    poster = models.ImageField(upload_to="poster/")
     release_year = models.DateField()
     language = models.CharField(max_length=5)
     description = models.TextField()
