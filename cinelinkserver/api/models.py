@@ -43,7 +43,7 @@ class Schedules(models.Model):
     def check_and_delete_schedule(self):
         local_time = timezone.now().time()
 
-        if self.end_time and local_time > self.end_time:
+        if self.end_time and local_time == self.end_time:
             self.delete()
 
 
