@@ -7,7 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = get_user_model()
-        fields = ('id', 'username', 'password')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'password', 'is_superuser')
 
     def create(self, validated_data):
         user = get_user_model().objects.create_user(**validated_data)
@@ -23,11 +23,6 @@ class HallRoomSerializer(serializers.ModelSerializer):
         model = HallRoom
         fields = '__all__'
 
-class SeatSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Seats
-        fields = '__all__'
-
 class ScheduleSerializer(serializers.ModelSerializer):
     movie = MovieSerializer()
     hallroom = HallRoomSerializer()
@@ -36,10 +31,15 @@ class ScheduleSerializer(serializers.ModelSerializer):
         model = Schedules
         fields = '__all__'
 
+class SeatSerializer(serializers.ModelSerializer):
+    schedule = ScheduleSerializer()
+    class Meta:
+        model = Seats
+        fields = '__all__'
+
 class CartProductsSerializer(serializers.Serializer):
     user = serializers.PrimaryKeyRelatedField(queryset=models.User.objects.all())
     seat = SeatSerializer()
-    schedule = ScheduleSerializer()
 
     class Meta:
         model = CartProducts
@@ -63,13 +63,9 @@ class BookedSerializer(serializers.Serializer):
 
 class TicketSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=models.User.objects.all())
-    booked = BookedSerializer() 
+    seat = SeatSerializer() 
+    schedule = ScheduleSerializer()
 
     class Meta:
         model = Tickets
         fields = '__all__'
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = get_user_model()
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'password', 'is_superuser')
