@@ -180,58 +180,37 @@ class ScheduleDeleteView(DestroyAPIView): # Delete HallRoom
 ####################################################################################################
 # For Autheticated
 
-class AddSeatToCartProductsView(CreateAPIView):
+class AddSeatToCartProductsView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = CartProductsSerializer
 
-    def create(self, request, *args, **kwargs):
-        user = self.request.user
-        seat_id = request.data.get('seat_id')  # Assuming you send seat_id in the request data
-
+    def post(self, request, *args, **kwargs):
         try:
-            seat = Seats.objects.get(pk=seat_id, is_booked=False)
-        except Seats.DoesNotExist:
-            return Response({"error": "Seat not found or already booked"}, status=400)
+            seat_ids = request.data.get('seat_ids', [])
+            user = request.user
 
-        # Assuming you have a schedule_id in the request data
-        schedule_id = request.data.get('schedule_id')
-        schedule = Schedules.objects.get(pk=schedule_id)
+            # Ensure seats exist
+            seats = Seats.objects.filter(id__in=seat_ids, is_booked=False)
+            if not seats.exists() or seats.count() != len(seat_ids):
+                return Response({'detail': 'Invalid seat selection'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Create CartProducts instance
-        cart_product = CartProducts.objects.create(user=user, seat=seat, schedule=schedule)
+            # Add seats to CartProducts
+            cart_products = []
+            for seat in seats:
+                cart_product = CartProducts(user=user, seat=seat)
+                cart_products.append(cart_product)
 
-        # Mark the seat as booked
-        seat.is_booked = True
-        seat.save()
+            CartProducts.objects.bulk_create(cart_products)
 
-        return Response({"success": "Seat added to the cart successfully"}, status=201)
+            # Update seat status to booked
+            seats.update(is_booked=True)
 
-class AddCartProductsView(CreateAPIView):
-    serializer_class = CartProductsSerializer
-    permission_classes = [permissions.IsAuthenticated]
+            serializer = CartProductsSerializer(cart_products, many=True)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def create(self, request, *args, **kwargs):
-        user = self.request.user
-        cart, created = Cart.objects.get_or_create(user=user)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        seat_id = serializer.validated_data.get('seat')
-        schedule_id = serializer.validated_data.get('schedule')
-
-        seat = get_object_or_404(Seats, id=seat_id)
-        schedule = get_object_or_404(Schedules, id=schedule_id)
-
-        cart_product, created = CartProducts.objects.get_or_create(
-            user=user, seat=seat, schedule=schedule
-        )
-
-        cart.cart_products.add(cart_product)
-        cart.save()
-
-        return Response({'detail': 'Cart Products added successfully'})
 
 class CartProductsDeleteView(DestroyAPIView):
     authentication_classes = [TokenAuthentication]
@@ -290,21 +269,6 @@ class CreateBookedView(APIView):
         except stripe.error.CardError as e:
             return JsonResponse({'error': str(e)}, status=403)
 
-class BookedDeleteView(DestroyAPIView):
-    queryset = Booked.objects.all()
-    serializer_class = BookedSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_object(self):
-        # Assuming your URL has a parameter named "pk" for the Booked instance id
-        pk = self.kwargs.get('pk')
-        return Booked.objects.get(pk=pk, user=self.request.user)
-
-    def perform_destroy(self, instance):
-        # Additional logic before deletion, if needed
-        instance.delete()
-
 class TicketsAPIView(RetrieveAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
@@ -341,4 +305,13 @@ class UserDeleteView(DestroyAPIView):
     def perform_destroy(self, instance):
         # Optionally, you can invalidate the user's tokens on deletion
         AuthToken.objects.filter(user=instance).delete()
+        instance.delete()
+
+class TicketDeleteView(DestroyAPIView):
+    queryset = Tickets.objects.all()
+    serializer_class = TicketSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_destroy(self, instance):
         instance.delete()
