@@ -3,8 +3,9 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 import random
 import string
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
+from django.db import transaction
 
 # Create your models here.
 ####################################################################################################
@@ -16,10 +17,10 @@ class Movies(models.Model):
     description = models.TextField()
     genre = models.CharField(max_length=50)
     duration = models.CharField(max_length=50)
-    upcomming = models.BooleanField(default=False)
+    upcoming = models.BooleanField(default=False)
 
     def __str__(self) -> str:
-        return f"{self.title} - {self.duration} - Upcomming: {self.upcomming}"
+        return f"{self.title} - {self.duration} - Upcomming: {self.upcoming}"
 
 ####################################################################################################
 class HallRoom(models.Model):
@@ -36,42 +37,39 @@ class Schedules(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
 
-    def __init__(self, *args, **kwargs):
-        super(Schedules, self).__init__(*args, **kwargs)
-        self.check_and_delete_schedule()
-
-    def check_and_delete_schedule(self):
-        local_time = timezone.now().time()
-
-        if self.end_time and local_time == self.end_time:
+    def save(self, *args, **kwargs):
+        # Check if the current time is equal to the end_time
+        current_time = timezone.now().time()
+        if current_time >= self.end_time:
+            # If the current time is equal to or after the end_time, delete the schedule
             self.delete()
-
+        else:
+            super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.pk} - {self.movie.title} - {self.hallroom.hallroom_name} - Time:({self.start_time} - {self.end_time})"
 
 ####################################################################################################
 class Seats(models.Model):
-    hall_room = models.ForeignKey(HallRoom, on_delete=models.CASCADE)
+    schedule = models.ForeignKey(Schedules, on_delete=models.CASCADE)
     seat_number = models.SmallIntegerField(default=1)
     is_booked = models.BooleanField(default=False)
 
     @classmethod
-    def create_seats_for_hallroom(cls, hall_room):
-        seats = [cls(hall_room=hall_room, seat_number=seat_num) for seat_num in range(1, 151)]
+    def generate_seats(cls, schedule):
+        seats = [cls(schedule=schedule, seat_number=i) for i in range(1, 151)]
         cls.objects.bulk_create(seats)
 
     def __str__(self) -> str:
-        return f"{self.pk} - {self.hall_room.hallroom_name} - {self.seat_number} - Booked: {self.is_booked}"
+        return f"id:{self.pk} - Movie: {self.schedule.movie.title} - Hall: {self.schedule.hallroom.hallroom_name}- Seat: {self.seat_number} - Booked: {self.is_booked}"
 
 ####################################################################################################
 class CartProducts(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     seat = models.ForeignKey(Seats, on_delete=models.CASCADE)
-    schedule = models.ForeignKey(Schedules, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return f"{self.user.username} - Seat: {self.seat} - {self.schedule}"
+        return f"{self.user.username} - Seat: {self.seat}"
 
 ####################################################################################################
 class Cart(models.Model):
@@ -84,26 +82,19 @@ class Cart(models.Model):
 ####################################################################################################
 class Booked(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
-    is_booked = models.BooleanField(default=True)
-    
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
+    cart = models.ForeignKey(Cart, on_delete=models.SET_NULL, null=True)
 
-        # Check if there is no corresponding Tickets instance
-        if not hasattr(self, 'tickets'):
-            # Create a Tickets instance and link it to the Booked instance
-            Tickets.objects.create(user=self.user, booked=self)
 
     def __str__(self) -> str:
-        return f"{self.user.username} - Booked: {self.is_booked}"
+        return f"{self.user.username}"
 
 ####################################################################################################
 class Tickets(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    booked = models.ForeignKey(Booked, on_delete=models.CASCADE)
     expired = models.BooleanField(default=False)
     ticket_number = models.CharField(unique=True, max_length=15)
+    seat_numbers = models.ManyToManyField(Seats)
+    schedule = models.ForeignKey(Schedules, on_delete=models.CASCADE, null=True)
 
     def generate_ticket_number(self):
         characters = string.ascii_uppercase + string.digits
@@ -119,29 +110,41 @@ class Tickets(models.Model):
         return f"{self.user.username} - Ticket_Number: {self.ticket_number}"
 
 ####################################################################################################
-@receiver(post_save, sender=HallRoom)
-def create_seats_for_hallroom(sender, instance, created, **kwargs):
+###
+@receiver(post_save, sender=Schedules)
+def create_seats(sender, instance, created, **kwargs):
+    """
+    Signal receiver to create seats when a schedule is created.
+    """
     if created:
-        Seats.create_seats_for_hallroom(instance)
+        Seats.generate_seats(instance)
+###
+@receiver(post_save, sender=Booked)
+def create_tickets_and_update_seats(sender, instance, **kwargs):
+    if kwargs.get('created', False):
+        with transaction.atomic():
+            cart_products = instance.cart.cart_products.all()
 
-@receiver(post_save, sender=Tickets)
-@receiver(post_delete, sender=Tickets)
-def update_seats_status(sender, instance, **kwargs):
-    # Check if the instance is being created or deleted
-    created = kwargs.get('created', False)
-    deleted = kwargs.get('signal', False) == post_delete
+            # Update is_booked value for Seats in CartProducts
+            for cart_product in cart_products:
+                cart_product.seat.is_booked = True
+                cart_product.seat.save()
 
-    # Check if the instance is a Tickets model
-    if isinstance(instance, Tickets):
-        # Check if the seat's pk is in the Tickets.booked.cart.cart_products.seat
-        booked_seats_pks = instance.booked.cart.cart_products.values_list('seat__pk', flat=True)
-        seats_to_update = Seats.objects.filter(pk__in=booked_seats_pks)
+            # Create Tickets and store Schedules and Seats
+            for cart_product in cart_products:
+                ticket = Tickets.objects.create(
+                    user=instance.user,
+                    schedule=cart_product.seat.schedule
+                )
+                ticket.seat_numbers.set([cart_product.seat])
+                ticket.save()
 
-        # Update is_booked based on the condition
-        if created and seats_to_update:
-            seats_to_update.update(is_booked=True)
-        elif deleted and seats_to_update:
-            seats_to_update.update(is_booked=False)
+            # Delete all CartProducts
+            instance.cart.cart_products.all().delete()
 
-        # Update is_booked for seats that are not in the booked seats
-        Seats.objects.exclude(pk__in=booked_seats_pks).update(is_booked=False)
+###
+@receiver(pre_delete, sender=CartProducts)
+def delete_cart_if_empty(sender, instance, **kwargs):
+    cart = Cart.objects.filter(user=instance.user).first()
+    if cart and cart.cart_products.count() == 1:  # Check if the last CartProduct is being deleted
+        cart.delete()
