@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 import random
 import string
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save, pre_delete, pre_save
 from django.dispatch import receiver
 from django.db import transaction
 
@@ -36,15 +36,6 @@ class Schedules(models.Model):
     show_date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
-
-    def save(self, *args, **kwargs):
-        # Check if the current time is equal to the end_time
-        current_time = timezone.now().time()
-        if current_time >= self.end_time:
-            # If the current time is equal to or after the end_time, delete the schedule
-            self.delete()
-        else:
-            super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.pk} - {self.movie.title} - {self.hallroom.hallroom_name} - Time:({self.start_time} - {self.end_time})"
