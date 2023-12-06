@@ -274,33 +274,42 @@ class CartAPIView(RetrieveAPIView):
         # Return the Cart object associated with the authenticated user
         return Cart.objects.get(user=self.request.user)
 
-class CreateBookedView(APIView):
+# class CreateBookedView(APIView):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def post(self, request, *args, **kwargs):
+#         # Get the user's cart
+#         cart = get_object_or_404(Cart, user=request.user)
+
+#         # Calculate the total amount based on the number of cart_products
+#         total_amount = taka * cart.cart_products.count()
+
+#         try:
+#             # Create a payment intent using Stripe
+#             intent = stripe.PaymentIntent.create(
+#                 amount=total_amount * 100,  # Amount in cents
+#                 currency="bdt",
+#             )
+
+#             # Assuming payment is successful, create a Booked instance
+#             booked = Booked.objects.create(user=request.user, cart=cart)
+
+#             # Customize this part based on your needs
+#             booked.save()
+
+#             return Response({'clientSecret': intent.client_secret})
+#         except stripe.error.CardError as e:
+#             return JsonResponse({'error': str(e)}, status=403)
+
+class CreateBookedView(CreateAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = BookedSerializer
 
-    def post(self, request, *args, **kwargs):
-        # Get the user's cart
-        cart = get_object_or_404(Cart, user=request.user)
-
-        # Calculate the total amount based on the number of cart_products
-        total_amount = taka * cart.cart_products.count()
-
-        try:
-            # Create a payment intent using Stripe
-            intent = stripe.PaymentIntent.create(
-                amount=total_amount * 100,  # Amount in cents
-                currency="bdt",
-            )
-
-            # Assuming payment is successful, create a Booked instance
-            booked = Booked.objects.create(user=request.user, cart=cart)
-
-            # Customize this part based on your needs
-            booked.save()
-
-            return Response({'clientSecret': intent.client_secret})
-        except stripe.error.CardError as e:
-            return JsonResponse({'error': str(e)}, status=403)
+    def perform_create(self, serializer):
+        # Set the user and cart for the Booked instance
+        serializer.save(user=self.request.user, cart=self.request.user.cart)
 
 class TicketsAPIView(RetrieveAPIView):
     authentication_classes = [TokenAuthentication]

@@ -55,21 +55,19 @@ class Seats(models.Model):
         return f"id:{self.pk} - Movie: {self.schedule.movie.title} - Hall: {self.schedule.hallroom.hallroom_name}- Seat: {self.seat_number} - Booked: {self.is_booked}"
 
 ####################################################################################################
-class CartProducts(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    seat = models.ForeignKey(Seats, on_delete=models.CASCADE)
-
-    def __str__(self) -> str:
-        return f"id: {self.pk} - {self.user.username} - Seat: {self.seat}"
-
-####################################################################################################
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    cart_products = models.ManyToManyField(CartProducts)
 
     def __str__(self) -> str:
         return f"{self.user.username}"
+####################################################################################################
 
+class CartProducts(models.Model):
+    seat = models.ForeignKey(Seats, on_delete=models.CASCADE)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+
+    def __str__(self) -> str:
+        return f"id: {self.pk} - {self.user.username} - Seat: {self.seat}"
 ####################################################################################################
 class Booked(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
