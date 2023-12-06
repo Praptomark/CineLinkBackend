@@ -250,7 +250,7 @@ class CreateBookedView(APIView):
         cart = get_object_or_404(Cart, user=request.user)
 
         # Calculate the total amount based on the number of cart_products
-        total_amount = 400 * cart.cart_products.count()
+        total_amount = taka * cart.cart_products.count()
 
         try:
             # Create a payment intent using Stripe
