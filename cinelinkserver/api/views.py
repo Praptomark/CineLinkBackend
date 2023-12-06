@@ -203,7 +203,7 @@ class AddSeatToCartProductsView(APIView):
             CartProducts.objects.bulk_create(cart_products)
 
             # Update seat status to booked
-            seats.update(is_booked=True)
+            # seats.update(is_booked=True)
 
             serializer = CartProductsSerializer(cart_products, many=True)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
