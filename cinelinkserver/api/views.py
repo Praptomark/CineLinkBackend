@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from knox.auth import TokenAuthentication
 from django.shortcuts import get_object_or_404
 from knox.models import AuthToken
-from rest_framework.generics import CreateAPIView, UpdateAPIView, DestroyAPIView, RetrieveAPIView
+from rest_framework.generics import CreateAPIView, UpdateAPIView, DestroyAPIView, RetrieveAPIView, ListAPIView
 from .serializers import MovieSerializer, ScheduleSerializer, UserSerializer, SeatSerializer, HallRoomSerializer, CartSerializer, CartProductsSerializer, BookedSerializer, TicketSerializer
 from .models import Movies, Schedules, Seats, HallRoom, Cart, CartProducts, Booked, Tickets
 from django.contrib.auth import get_user_model
@@ -212,6 +212,16 @@ class CartProductsDeleteView(DestroyAPIView):
             return Response({"detail": "Seat removed from CartProducts successfully."}, status=status.HTTP_204_NO_CONTENT)
         except CartProducts.DoesNotExist:
             return Response({"detail": "Seat not found in user's CartProducts."}, status=status.HTTP_404_NOT_FOUND)
+
+class CartProductsListView(ListAPIView):
+    queryset = CartProducts.objects.all()
+    serializer_class = CartProductsSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Filter CartProducts based on the authenticated user
+        return CartProducts.objects.filter(user=self.request.user)
 
 class CartCreateAPIView(APIView):
     authentication_classes = [TokenAuthentication]

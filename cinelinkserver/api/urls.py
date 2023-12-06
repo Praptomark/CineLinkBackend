@@ -28,6 +28,7 @@ from .views import (
     TicketDeleteView,
     CartCreateAPIView, 
     CartDeleteAPIView,
+    CartProductsListView,
     )
 
 urlpatterns = [
@@ -63,6 +64,7 @@ urlpatterns = [
     # For Authenticated#############################################################################
     path('seat-to-cartproducts/', AddSeatToCartProductsView.as_view(), name='seat-to-products'),
     path('delete-cartproducts/', CartProductsDeleteView.as_view(), name='delete-cart-product'),
+    path('cartproducts/', CartProductsListView.as_view(), name='cartproducts-list'),
     
     path('create-cart/', CartCreateAPIView.as_view(), name='create_cart'),
     path('delete-cart/', CartDeleteAPIView.as_view(), name='delete_cart'),
