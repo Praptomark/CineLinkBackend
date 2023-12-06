@@ -184,32 +184,20 @@ class AddSeatToCartProductsView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, id, *args, **kwargs):
         try:
-            seat_ids = request.data.get('seat_ids', [])
-            user = request.user
+            seat = Seats.objects.get(pk=id)
+        except Seats.DoesNotExist:
+            return Response({"detail": "Seat not found"}, status=status.HTTP_404_NOT_FOUND)
 
-            # Ensure seats exist
-            seats = Seats.objects.filter(id__in=seat_ids, is_booked=False)
-            if not seats.exists() or seats.count() != len(seat_ids):
-                return Response({'detail': 'Invalid seat selection'}, status=status.HTTP_400_BAD_REQUEST)
+        # Check if the seat is already booked
+        if seat.is_booked:
+            return Response({"detail": "Seat is already booked"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Add seats to CartProducts
-            cart_products = []
-            for seat in seats:
-                cart_product = CartProducts(user=user, seat=seat)
-                cart_products.append(cart_product)
+        # Create a CartProducts entry for the authenticated user and the selected seat
+        CartProducts.objects.create(user=request.user, seat=seat)
 
-            CartProducts.objects.bulk_create(cart_products)
-
-            # Update seat status to booked
-            # seats.update(is_booked=True)
-
-            serializer = CartProductsSerializer(cart_products, many=True)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({"detail": "Seat added to CartProducts successfully"}, status=status.HTTP_201_CREATED)
 
 
 class CartProductsDeleteView(DestroyAPIView):
