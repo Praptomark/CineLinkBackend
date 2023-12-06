@@ -184,41 +184,34 @@ class AddSeatToCartProductsView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, id, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
+        seat_id = request.data.get('seat_id')
+
+        if not seat_id:
+            return Response({"error": "Seat ID is required in the request body"}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            seat = Seats.objects.get(pk=id)
+            seat = Seats.objects.get(pk=seat_id)
         except Seats.DoesNotExist:
-            return Response({"detail": "Seat not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Invalid seat ID"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if the seat is already booked
-        if seat.is_booked:
-            return Response({"detail": "Seat is already booked"}, status=status.HTTP_400_BAD_REQUEST)
+        user = request.user
+        cart_product = CartProducts.objects.create(user=user, seat=seat)
 
-        # Create a CartProducts entry for the authenticated user and the selected seat
-        CartProducts.objects.create(user=request.user, seat=seat)
-
-        return Response({"detail": "Seat added to CartProducts successfully"}, status=status.HTTP_201_CREATED)
-
+        return Response({"message": "Seat added to CartProducts successfully"}, status=status.HTTP_201_CREATED)
 
 class CartProductsDeleteView(DestroyAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
-    def delete(self, request, *args, **kwargs):
-        # Get the user's cart
-        user_cart = Cart.objects.get(user=request.user)
-
-        # Get the CartProducts instance to be deleted
-        cart_product_id = kwargs.get('pk')
+    def destroy(self, request, *args, **kwargs):
         try:
-            cart_product = CartProducts.objects.get(id=cart_product_id, user=request.user)
+            seat_id = request.data.get('seat_id')
+            cart_product = CartProducts.objects.get(user=request.user, seat_id=seat_id)
+            cart_product.delete()
+            return Response({"detail": "Seat removed from CartProducts successfully."}, status=status.HTTP_204_NO_CONTENT)
         except CartProducts.DoesNotExist:
-            return Response({'detail': 'Cart product not found.'}, status=status.HTTP_404_NOT_FOUND)
-
-        # Remove the CartProducts from the cart
-        user_cart.cart_products.remove(cart_product)
-
-        return Response({'detail': 'Cart product deleted successfully.'}, status=status.HTTP_200_OK)
+            return Response({"detail": "Seat not found in user's CartProducts."}, status=status.HTTP_404_NOT_FOUND)
 
 class CartCreateAPIView(APIView):
     authentication_classes = [TokenAuthentication]

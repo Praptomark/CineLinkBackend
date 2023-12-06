@@ -61,8 +61,8 @@ urlpatterns = [
     path('schedule-delete/<int:pk>', ScheduleDeleteView.as_view(), name='schedule-delete'),
     
     # For Authenticated#############################################################################
-    path('seat-to-cartproducts/<int:id>', AddSeatToCartProductsView.as_view(), name='seat-to-products'),
-    path('delete-cart-products/<int:pk>', CartProductsDeleteView.as_view(), name='delete-cart-product'),
+    path('seat-to-cartproducts/', AddSeatToCartProductsView.as_view(), name='seat-to-products'),
+    path('delete-cartproducts/', CartProductsDeleteView.as_view(), name='delete-cart-product'),
     
     path('create-cart/', CartCreateAPIView.as_view(), name='create_cart'),
     path('delete-cart/', CartDeleteAPIView.as_view(), name='delete_cart'),
