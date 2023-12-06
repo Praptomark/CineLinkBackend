@@ -67,7 +67,7 @@ class CartProducts(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return f"id: {self.pk} - {self.user.username} - Seat: {self.seat}"
+        return f"id: {self.pk}  - Seat: {self.seat}"
 ####################################################################################################
 class Booked(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
