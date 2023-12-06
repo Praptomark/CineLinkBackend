@@ -232,6 +232,48 @@ class CartProductsDeleteView(DestroyAPIView):
 
         return Response({'detail': 'Cart product deleted successfully.'}, status=status.HTTP_200_OK)
 
+class CartCreateAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        # Get user from the request
+        user = self.request.user
+
+        # Check if the user already has a cart
+        cart, created = Cart.objects.get_or_create(user=user)
+
+        # Get the CartProducts from the request data (assuming it's a list of CartProduct IDs)
+        cart_product_ids = request.data.get('cart_product_ids', [])
+
+        # Add CartProducts to the Cart
+        for cart_product_id in cart_product_ids:
+            try:
+                cart_product = CartProducts.objects.get(id=cart_product_id, user=user)
+                cart.cart_products.add(cart_product)
+            except CartProducts.DoesNotExist:
+                return Response({"error": f"CartProduct with ID {cart_product_id} not found for the user."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Serialize the Cart for the response
+        cart_serializer = CartSerializer(cart)
+
+        return Response(cart_serializer.data, status=status.HTTP_201_CREATED)
+
+class CartDeleteAPIView(DestroyAPIView):
+    queryset = Cart.objects.all()
+    serializer_class = CartSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
+    def get_object(self):
+        user = self.request.user
+        return Cart.objects.get(user=user)
+
+    def perform_destroy(self, instance):
+        # Delete the user's cart
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 class CartAPIView(RetrieveAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
