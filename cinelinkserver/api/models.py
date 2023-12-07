@@ -53,26 +53,26 @@ class Seats(models.Model):
 
     def __str__(self) -> str:
         return f"id:{self.pk} - Movie: {self.schedule.movie.title} - Hall: {self.schedule.hallroom.hallroom_name}- Seat: {self.seat_number} - Booked: {self.is_booked}"
+####################################################################################################
+
+class CartProducts(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    seat = models.ForeignKey(Seats, on_delete=models.CASCADE)
+
+    def __str__(self) -> str:
+        return f"id: {self.pk}  - Seat: {self.seat}"
 
 ####################################################################################################
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    cart_items = models.ManyToManyField(CartProducts)
 
     def __str__(self) -> str:
         return f"{self.user.username}"
 ####################################################################################################
-
-class CartProducts(models.Model):
-    seat = models.ForeignKey(Seats, on_delete=models.CASCADE)
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
-
-    def __str__(self) -> str:
-        return f"id: {self.pk}  - Seat: {self.seat}"
-####################################################################################################
 class Booked(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     cart = models.ForeignKey(Cart, on_delete=models.SET_NULL, null=True)
-
 
     def __str__(self) -> str:
         return f"{self.user.username}"
@@ -131,18 +131,18 @@ def create_tickets_and_update_seats(sender, instance, **kwargs):
             # Delete all CartProducts
             instance.cart.cart_products.all().delete()
 
-###
-# @receiver(pre_delete, sender=CartProducts)
-# def delete_cart_if_empty(sender, instance, **kwargs):
-#     cart = Cart.objects.filter(user=instance.user).first()
-#     if cart and cart.cart_products.count() == 1:  # Check if the last CartProduct is being deleted
-#         cart.delete()
+##
+@receiver(pre_delete, sender=CartProducts)
+def delete_cart_if_empty(sender, instance, **kwargs):
+    cart = Cart.objects.filter(user=instance.user).first()
+    if cart and cart.cart_products.count() == 1:  # Check if the last CartProduct is being deleted
+        cart.delete()
 
-@receiver(post_save, sender=User)
-def create_user_cart(sender, instance, created, **kwargs):
-    if created:
-        Cart.objects.create(user=instance)
+# @receiver(post_save, sender=User)
+# def create_user_cart(sender, instance, created, **kwargs):
+#     if created:
+#         Cart.objects.create(user=instance)
 
-@receiver(post_save, sender=User)
-def save_user_cart(sender, instance, **kwargs):
-    instance.cart.save()
+# @receiver(post_save, sender=User)
+# def save_user_cart(sender, instance, **kwargs):
+#     instance.cart.save()
