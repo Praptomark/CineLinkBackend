@@ -223,33 +223,26 @@ class CartProductsListView(ListAPIView):
         # Filter CartProducts based on the authenticated user
         return CartProducts.objects.filter(user=self.request.user)
 
-class CartCreateAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
+class CartCreateAPIView(CreateAPIView):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = CartSerializer  # Replace with your actual serializer
 
-    def post(self, request, *args, **kwargs):
-        # Get user from the request
-        user = self.request.user
+    def create(self, request, *args, **kwargs):
+        # Get the user associated with the token
+        user = request.user
 
-        # Check if the user already has a cart
+        # Retrieve all CartProducts for the authenticated user
+        cart_products = CartProducts.objects.filter(user=user)
+
+        # Create a Cart instance or get existing one
         cart, created = Cart.objects.get_or_create(user=user)
 
-        # Get the CartProducts from the request data (assuming it's a list of CartProduct IDs)
-        cart_product_ids = request.data.get('cart_product_ids', [])
+        # Add CartProducts to the cart_items many-to-many field
+        cart.cart_items.add(*cart_products)
 
-        # Add CartProducts to the Cart
-        for cart_product_id in cart_product_ids:
-            try:
-                cart_product = CartProducts.objects.get(id=cart_product_id, user=user)
-                cart.cart_products.add(cart_product)
-            except CartProducts.DoesNotExist:
-                return Response({"error": f"CartProduct with ID {cart_product_id} not found for the user."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Serialize the Cart for the response
-        cart_serializer = CartSerializer(cart)
-
-        return Response(cart_serializer.data, status=status.HTTP_201_CREATED)
-
+        return Response(status=status.HTTP_201_CREATED)
+    
 class CartDeleteAPIView(DestroyAPIView):
     queryset = Cart.objects.all()
     serializer_class = CartSerializer

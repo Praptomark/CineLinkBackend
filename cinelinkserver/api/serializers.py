@@ -40,8 +40,7 @@ class CartProductsSerializer(serializers.Serializer):
         fields = '__all__'
 
 class CartSerializer(serializers.Serializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=models.User.objects.all())
-    cart_products = CartProductsSerializer(many=True, read_only=True)
+    cart_items = CartProductsSerializer(many=True)
 
     class Meta:
         model = Cart
