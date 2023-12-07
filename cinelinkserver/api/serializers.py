@@ -48,7 +48,6 @@ class CartSerializer(serializers.Serializer):
 
 class BookedSerializer(serializers.Serializer):
     user = serializers.PrimaryKeyRelatedField(queryset=models.User.objects.all())
-    cart = CartSerializer()
 
     class Meta:
         model = Booked

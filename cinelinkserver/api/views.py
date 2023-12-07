@@ -295,14 +295,26 @@ class CartAPIView(RetrieveAPIView):
 #         except stripe.error.CardError as e:
 #             return JsonResponse({'error': str(e)}, status=403)
 
-class CreateBookedView(CreateAPIView):
+class CreateBookedView(APIView):
     authentication_classes = [TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = BookedSerializer
 
-    def perform_create(self, serializer):
-        # Set the user and cart for the Booked instance
-        serializer.save(user=self.request.user, cart=self.request.user.cart)
+    def post(self, request, *args, **kwargs):
+        # Get the user from the token in the header
+        user = request.user
+
+        # Check if the user already has a Booked instance
+        if Booked.objects.filter(user=user).exists():
+            return Response({"detail": "User already has a booked instance."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create a Booked instance for the user
+        booked_instance = Booked.objects.create(user=user)
+
+        # You can also perform additional actions or return more data in the response if needed
+
+        # Serialize the created instance
+        serializer = BookedSerializer(booked_instance)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class TicketsAPIView(RetrieveAPIView):
     authentication_classes = [TokenAuthentication]

@@ -72,7 +72,6 @@ class Cart(models.Model):
 ####################################################################################################
 class Booked(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    cart = models.ForeignKey(Cart, on_delete=models.SET_NULL, null=True)
 
     def __str__(self) -> str:
         return f"{self.user.username}"
@@ -107,42 +106,42 @@ def create_seats(sender, instance, created, **kwargs):
     """
     if created:
         Seats.generate_seats(instance)
-###
+
 @receiver(post_save, sender=Booked)
-def create_tickets_and_update_seats(sender, instance, **kwargs):
-    if kwargs.get('created', False):
-        with transaction.atomic():
-            cart_products = instance.cart.cart_products.all()
+def generate_tickets(sender, instance, created, **kwargs):
+    if created:
+        # Assuming each Booked instance corresponds to a user's booking
+        user = instance.user
 
-            # Update is_booked value for Seats in CartProducts
-            for cart_product in cart_products:
-                cart_product.seat.is_booked = True
-                cart_product.seat.save()
+        # Get all CartProducts for the user
+        cart_products = CartProducts.objects.filter(user=user)
 
-            # Create Tickets and store Schedules and Seats
-            for cart_product in cart_products:
-                ticket = Tickets.objects.create(
-                    user=instance.user,
-                    schedule=cart_product.seat.schedule
-                )
-                ticket.seat_numbers.set([cart_product.seat])
-                ticket.save()
+        # Create a Tickets instance for each CartProduct
+        for cart_product in cart_products:
+            schedule = cart_product.seat.schedule
+            seat_numbers = Seats.objects.filter(schedule=schedule)
+            ticket = Tickets(user=user, schedule=schedule)
+            ticket.save()
 
-            # Delete all CartProducts
-            instance.cart.cart_products.all().delete()
+            # Add seat numbers to the ticket
+            ticket.seat_numbers.add(*seat_numbers)
 
-##
-@receiver(pre_delete, sender=CartProducts)
-def delete_cart_if_empty(sender, instance, **kwargs):
-    cart = Cart.objects.filter(user=instance.user).first()
-    if cart and cart.cart_products.count() == 1:  # Check if the last CartProduct is being deleted
-        cart.delete()
+            # Mark seats as booked
+            seat_numbers.update(is_booked=True)
 
-# @receiver(post_save, sender=User)
-# def create_user_cart(sender, instance, created, **kwargs):
-#     if created:
-#         Cart.objects.create(user=instance)
+        # Clear CartProducts and Cart for the user
+        CartProducts.objects.filter(user=user).delete()
+        Cart.objects.filter(user=user).delete()
 
-# @receiver(post_save, sender=User)
-# def save_user_cart(sender, instance, **kwargs):
-#     instance.cart.save()
+
+@receiver(post_save, sender=Booked)
+def set_seats_as_booked(sender, instance, **kwargs):
+    # Set all seats in CartProducts to True
+    cart_products = CartProducts.objects.filter(user=instance.user)
+    for cart_product in cart_products:
+        cart_product.seat.is_booked = True
+        cart_product.seat.save()
+
+    # Delete all CartProducts and the Cart
+    CartProducts.objects.filter(user=instance.user).delete()
+    Cart.objects.filter(user=instance.user).delete()
