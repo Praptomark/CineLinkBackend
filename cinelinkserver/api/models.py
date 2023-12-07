@@ -126,13 +126,6 @@ def generate_tickets(sender, instance, created, **kwargs):
             # Add seat numbers to the ticket
             ticket.seat_numbers.add(*seat_numbers)
 
-            # Mark seats as booked
-            seat_numbers.update(is_booked=True)
-
-        # Clear CartProducts and Cart for the user
-        CartProducts.objects.filter(user=user).delete()
-        Cart.objects.filter(user=user).delete()
-
 
 @receiver(post_save, sender=Booked)
 def set_seats_as_booked(sender, instance, **kwargs):
