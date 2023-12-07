@@ -132,8 +132,17 @@ def create_tickets_and_update_seats(sender, instance, **kwargs):
             instance.cart.cart_products.all().delete()
 
 ###
-@receiver(pre_delete, sender=CartProducts)
-def delete_cart_if_empty(sender, instance, **kwargs):
-    cart = Cart.objects.filter(user=instance.user).first()
-    if cart and cart.cart_products.count() == 1:  # Check if the last CartProduct is being deleted
-        cart.delete()
+# @receiver(pre_delete, sender=CartProducts)
+# def delete_cart_if_empty(sender, instance, **kwargs):
+#     cart = Cart.objects.filter(user=instance.user).first()
+#     if cart and cart.cart_products.count() == 1:  # Check if the last CartProduct is being deleted
+#         cart.delete()
+
+@receiver(post_save, sender=User)
+def create_user_cart(sender, instance, created, **kwargs):
+    if created:
+        Cart.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_cart(sender, instance, **kwargs):
+    instance.cart.save()
