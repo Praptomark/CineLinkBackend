@@ -16,7 +16,7 @@ import stripe
 
 User = get_user_model()
 
-stripe.api_key = "sk_test_51OLVmoBoesafcP12icFEIm5TOEGuzD2UKsoRoSlkFWYYpChWfata4Q1oo19Qr8hleo3d4KBpOAcmztzYVCjVK5Nm00c1uWFFPz"
+stripe.api_key = ""
 taka = 400
 
 ####################################################################################################
