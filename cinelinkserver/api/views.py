@@ -8,15 +8,15 @@ from knox.auth import TokenAuthentication
 from django.shortcuts import get_object_or_404
 from knox.models import AuthToken
 from rest_framework.generics import CreateAPIView, UpdateAPIView, DestroyAPIView, RetrieveAPIView, ListAPIView
-from .serializers import MovieSerializer, ScheduleSerializer, UserSerializer, SeatSerializer, HallRoomSerializer, CartSerializer, CartProductsSerializer, BookedSerializer, TicketSerializer
-from .models import Movies, Schedules, Seats, HallRoom, Cart, CartProducts, Booked, Tickets
+from .serializers import MovieSerializer, ScheduleSerializer, UserSerializer, SeatSerializer, HallRoomSerializer, CartSerializer, BookedSerializer
+from .models import Movies, Schedules, Seats, HallRoom, Cart, Booked
 from django.contrib.auth import get_user_model
-import stripe
-from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password
+import stripe
 
 User = get_user_model()
-stripe.api_key = "your_stripe_secret_key"
+
+stripe.api_key = "sk_test_51OLVmoBoesafcP12icFEIm5TOEGuzD2UKsoRoSlkFWYYpChWfata4Q1oo19Qr8hleo3d4KBpOAcmztzYVCjVK5Nm00c1uWFFPz"
 taka = 400
 
 ####################################################################################################
@@ -179,152 +179,6 @@ class ScheduleDeleteView(DestroyAPIView): # Delete HallRoom
 
 ####################################################################################################
 # For Autheticated
-
-class AddSeatToCartProductsView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        seat_id = request.data.get('seat_id')
-
-        if not seat_id:
-            return Response({"error": "Seat ID is required in the request body"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            seat = Seats.objects.get(pk=seat_id)
-        except Seats.DoesNotExist:
-            return Response({"error": "Invalid seat ID"}, status=status.HTTP_404_NOT_FOUND)
-
-        user = request.user
-        cart_product = CartProducts.objects.create(user=user, seat=seat)
-
-        return Response({"message": "Seat added to CartProducts successfully"}, status=status.HTTP_201_CREATED)
-
-class CartProductsDeleteView(DestroyAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
-
-    def destroy(self, request, *args, **kwargs):
-        try:
-            seat_id = request.data.get('seat_id')
-            cart_product = CartProducts.objects.get(user=request.user, seat_id=seat_id)
-            cart_product.delete()
-            return Response({"detail": "Seat removed from CartProducts successfully."}, status=status.HTTP_204_NO_CONTENT)
-        except CartProducts.DoesNotExist:
-            return Response({"detail": "Seat not found in user's CartProducts."}, status=status.HTTP_404_NOT_FOUND)
-
-class CartProductsListView(ListAPIView):
-    queryset = CartProducts.objects.all()
-    serializer_class = CartProductsSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        # Filter CartProducts based on the authenticated user
-        return CartProducts.objects.filter(user=self.request.user)
-
-class CartCreateAPIView(CreateAPIView):
-    authentication_classes = (TokenAuthentication,)
-    permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = CartSerializer  # Replace with your actual serializer
-
-    def create(self, request, *args, **kwargs):
-        # Get the user associated with the token
-        user = request.user
-
-        # Retrieve all CartProducts for the authenticated user
-        cart_products = CartProducts.objects.filter(user=user)
-
-        # Create a Cart instance or get existing one
-        cart, created = Cart.objects.get_or_create(user=user)
-
-        # Add CartProducts to the cart_items many-to-many field
-        cart.cart_items.add(*cart_products)
-
-        return Response(status=status.HTTP_201_CREATED)
-    
-class CartDeleteAPIView(DestroyAPIView):
-    queryset = Cart.objects.all()
-    serializer_class = CartSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
-
-    def get_object(self):
-        user = self.request.user
-        return Cart.objects.get(user=user)
-
-    def perform_destroy(self, instance):
-        # Delete the user's cart
-        instance.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-class CartAPIView(RetrieveAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = CartSerializer
-
-    def get_object(self):
-        # Return the Cart object associated with the authenticated user
-        return Cart.objects.get(user=self.request.user)
-
-# class CreateBookedView(APIView):
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def post(self, request, *args, **kwargs):
-#         # Get the user's cart
-#         cart = get_object_or_404(Cart, user=request.user)
-
-#         # Calculate the total amount based on the number of cart_products
-#         total_amount = taka * cart.cart_products.count()
-
-#         try:
-#             # Create a payment intent using Stripe
-#             intent = stripe.PaymentIntent.create(
-#                 amount=total_amount * 100,  # Amount in cents
-#                 currency="bdt",
-#             )
-
-#             # Assuming payment is successful, create a Booked instance
-#             booked = Booked.objects.create(user=request.user, cart=cart)
-
-#             # Customize this part based on your needs
-#             booked.save()
-
-#             return Response({'clientSecret': intent.client_secret})
-#         except stripe.error.CardError as e:
-#             return JsonResponse({'error': str(e)}, status=403)
-
-class CreateBookedView(APIView):
-    authentication_classes = [TokenAuthentication]
-
-    def post(self, request, *args, **kwargs):
-        # Get the user from the token in the header
-        user = request.user
-
-        # Check if the user already has a Booked instance
-        if Booked.objects.filter(user=user).exists():
-            return Response({"detail": "User already has a booked instance."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Create a Booked instance for the user
-        booked_instance = Booked.objects.create(user=user)
-
-        # You can also perform additional actions or return more data in the response if needed
-
-        # Serialize the created instance
-        serializer = BookedSerializer(booked_instance)
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-class TicketsAPIView(RetrieveAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = TicketSerializer
-
-    def get_object(self):
-        # Assuming you want to retrieve the ticket for the currently authenticated user
-        return Tickets.objects.get(user=self.request.user)
-
 class UserUpdateView(UpdateAPIView):
     serializer_class = UserSerializer
     authentication_classes = (TokenAuthentication,)
@@ -354,11 +208,151 @@ class UserDeleteView(DestroyAPIView):
         AuthToken.objects.filter(user=instance).delete()
         instance.delete()
 
-class TicketDeleteView(DestroyAPIView):
-    queryset = Tickets.objects.all()
-    serializer_class = TicketSerializer
+class CartAddAPIView(APIView): # For Seat to Cart
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_destroy(self, instance):
-        instance.delete()
+    def post(self, request, *args, **kwargs):
+        try:
+            seats_id = request.data.get('seats_id')
+            seat = Seats.objects.get(pk=seats_id)
+        except Seats.DoesNotExist:
+            return Response({"error": "Seat not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        user = request.user
+        cart_item = Cart.objects.create(user=user, seat=seat)
+        serializer = CartSerializer(cart_item)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class CartDeleteAPIView(DestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Cart.objects.all()
+    serializer_class = CartSerializer
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            # Extracting Seats id from the JSON body
+            seat_id = request.data.get('seats_id')
+
+            # Retrieving the Cart object based on user and seat
+            cart = Cart.objects.get(user=request.user, seat__id=seat_id)
+
+            # Deleting the Cart object
+            cart.delete()
+
+            return Response({'detail': 'Seat removed from the cart successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+        except Cart.DoesNotExist:
+            return Response({'detail': 'Seat not found in the cart.'}, status=status.HTTP_404_NOT_FOUND)
+
+        except Seats.DoesNotExist:
+            return Response({'detail': 'Seat not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+class CartListView(ListAPIView):
+    queryset = Cart.objects.all()
+    serializer_class = CartSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Filter Cart instances based on the authenticated user
+        return Cart.objects.filter(user=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+class BookedListView(ListAPIView):
+    queryset = Booked.objects.all()
+    serializer_class = BookedSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Filter Booked instances based on the authenticated user
+        return Booked.objects.filter(user=self.request.user)
+
+class BookedDeleteAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+
+    def post(self, request, *args, **kwargs):
+        # Check if the user is authenticated
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Get the Booked ID from the request data
+        booked_id = request.data.get("booked_id")
+
+        try:
+            # Retrieve the Booked instance
+            booked_instance = Booked.objects.get(id=booked_id, user=request.user)
+        except Booked.DoesNotExist:
+            return Response({"detail": "Booked instance not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Delete the Booked instance
+        booked_instance.delete()
+
+        return Response({"detail": "Booked instance deleted successfully."}, status=status.HTTP_200_OK)
+
+# class CreateBookedFromCartView(CreateAPIView): # Payment
+#     authentication_classes = (TokenAuthentication,)
+#     permission_classes = (permissions.IsAuthenticated,)
+
+#     def create(self, request, *args, **kwargs):
+#         user = self.request.user
+
+#         # Get all carts for the authenticated user
+#         carts = Cart.objects.filter(user=user)
+
+#         # Create booked instances for each cart
+#         for cart in carts:
+#             Booked.objects.create(user=user, seat=cart.seat)
+
+#         return Response({"detail": "Booked instances created successfully"}, status=status.HTTP_201_CREATED)
+    
+class PaymentView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            # Assuming your frontend sends the Stripe payment information in the request data
+            payment_info = request.data.get('stripe_info', {})
+
+            # Calculate the total amount based on the number of seats in the user's cart
+            cart_length = Cart.objects.filter(user=request.user).count()
+            total_amount = taka * cart_length
+
+            # Create a payment intent using Stripe
+            payment_intent = stripe.PaymentIntent.create(
+                amount=total_amount * 100,  # Amount in cents
+                currency="bdt",
+                payment_method=payment_info['payment_method'],
+                confirmation_method='manual',
+                confirm=True,
+                return_url="https://your-frontend-return-url.com"  # Specify your frontend return URL
+            )
+
+            # Check if payment is successful
+            if payment_intent['status'] == 'succeeded':
+                # Generate Booked instances and delete the Cart
+                cart_items = Cart.objects.filter(user=request.user)
+                for cart_item in cart_items:
+                    seat = cart_item.seat
+                    booked_instance = Booked.objects.create(
+                        user=request.user,
+                        seat=seat
+                    )
+                    # You can do further processing with the booked_instance if needed
+
+                cart_items.delete()  # Delete the cart after successful payment
+
+                return Response({'message': 'Payment successful'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Payment failed'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Movies, HallRoom, Seats, Schedules, Tickets, Cart, CartProducts, Booked
+from .models import Movies, HallRoom, Seats, Schedules, Cart, Booked
 from django.contrib.auth import models, get_user_model
 
 class UserSerializer(serializers.ModelSerializer):
@@ -31,16 +31,9 @@ class SeatSerializer(serializers.ModelSerializer):
         model = Seats
         fields = '__all__'
 
-class CartProductsSerializer(serializers.Serializer):
+class CartSerializer(serializers.Serializer):
     user = serializers.PrimaryKeyRelatedField(queryset=models.User.objects.all())
     seat = SeatSerializer()
-
-    class Meta:
-        model = CartProducts
-        fields = '__all__'
-
-class CartSerializer(serializers.Serializer):
-    cart_items = CartProductsSerializer(many=True)
 
     class Meta:
         model = Cart
@@ -48,16 +41,8 @@ class CartSerializer(serializers.Serializer):
 
 class BookedSerializer(serializers.Serializer):
     user = serializers.PrimaryKeyRelatedField(queryset=models.User.objects.all())
+    seat = SeatSerializer()
 
     class Meta:
         model = Booked
-        fields = '__all__'
-
-class TicketSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=models.User.objects.all())
-    seat = SeatSerializer() 
-    schedule = ScheduleSerializer()
-
-    class Meta:
-        model = Tickets
-        fields = '__all__'
+        fields = ["user", "seat", "ticket_number"]

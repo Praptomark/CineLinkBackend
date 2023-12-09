@@ -16,19 +16,18 @@ from .views import (
     ScheduleCreateView,
     ScheduleUpdateView,
     ScheduleDeleteView,
-    AddSeatToCartProductsView,
-    CartProductsDeleteView,
-    CartAPIView,
-    CreateBookedView,
-    TicketsAPIView,
     SeatAPIView,
     UserUpdateView,
     UserDetailsView,
     UserDeleteView,
-    TicketDeleteView,
-    CartCreateAPIView, 
+    CartAddAPIView,
     CartDeleteAPIView,
-    CartProductsListView,
+    CartListView,
+    BookedListView,
+    BookedDeleteAPIView,
+
+    # CreateBookedFromCartView
+    PaymentView
     )
 
 urlpatterns = [
@@ -62,20 +61,17 @@ urlpatterns = [
     path('schedule-delete/<int:pk>', ScheduleDeleteView.as_view(), name='schedule-delete'),
     
     # For Authenticated#############################################################################
-    path('seat-to-cartproducts/', AddSeatToCartProductsView.as_view(), name='seat-to-products'),
-    path('delete-cartproducts/', CartProductsDeleteView.as_view(), name='delete-cart-product'),
-    path('cartproducts/', CartProductsListView.as_view(), name='cartproducts-list'),
-    
-    path('create-cart/', CartCreateAPIView.as_view(), name='create_cart'),
-    path('delete-cart/', CartDeleteAPIView.as_view(), name='delete_cart'),
-    path('cart/', CartAPIView.as_view(), name='cart-api'),
-
-    path('booking/', CreateBookedView.as_view(), name='booking'),
-    
-    path('tickets/', TicketsAPIView.as_view(), name='tickets-api'),
-    path('delete-ticket/<int:pk>/', TicketDeleteView.as_view(), name='ticket-delete'),
-
     path('user/', UserDetailsView.as_view(), name='user-details'),
     path('update-user/', UserUpdateView.as_view(), name='user-update'),
     path('delete-user/', UserDeleteView.as_view(), name='user-delete'),
+
+    path('add-cart/', CartAddAPIView.as_view(), name='cart-add'),
+    path('delete-cart/', CartDeleteAPIView.as_view(), name='cart-delete'),
+    path('cart/', CartListView.as_view(), name='cart-list'),
+
+    # path('payment/', CreateBookedFromCartView.as_view(), name='create-booked-from-cart'),
+    path('payment/', PaymentView.as_view(), name='create-booked-from-cart'),
+
+    path('booked/', BookedListView.as_view(), name='booked-list'),
+    path('delete-book/', BookedDeleteAPIView.as_view(), name='booked-delete'),
 ]
