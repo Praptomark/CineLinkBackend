@@ -45,4 +45,4 @@ class BookedSerializer(serializers.Serializer):
 
     class Meta:
         model = Booked
-        fields = ["user", "seat", "ticket_number"]
+        fields = '__all__'
