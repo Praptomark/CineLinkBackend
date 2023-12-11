@@ -25,6 +25,7 @@ from .views import (
     CartListView,
     BookedListView,
     BookedDeleteAPIView,
+    HallRoomListView,
 
     # CreateBookedFromCartView
     PaymentView
@@ -38,6 +39,8 @@ urlpatterns = [
     path('logoutall/', knox_views.LogoutAllView.as_view(), name='knox_logoutall'),
 
     # For All#######################################################################################
+    path('hallrooms/', HallRoomListView.as_view(), name='hallroom-list'),
+
     path("movies/", MovieAPIView.as_view(), name="movies"),
     path("movies/<int:movie_id>", MovieAPIView.as_view(), name="movies"),
 

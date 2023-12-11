@@ -91,6 +91,12 @@ class SeatAPIView(RetrieveAPIView):
         seat_id = self.kwargs.get('id')
         return Seats.objects.get(pk=seat_id)
 
+class HallRoomListView(ListAPIView):
+    queryset = HallRoom.objects.all()
+    serializer_class = HallRoomSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (permissions.AllowAny)
+
 ####################################################################################################
 # For Admin
 class MovieCreateView(CreateAPIView): # Movie Create
