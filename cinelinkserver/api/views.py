@@ -330,7 +330,7 @@ class PaymentView(APIView):
             payment_intent = stripe.PaymentIntent.create(
                 amount=total_amount * 100,  # Amount in cents
                 currency="bdt",
-                payment_method=payment_info['payment_method'],
+                payment_method="pm_card_visa",
                 confirmation_method='manual',
                 confirm=True,
                 return_url="https://your-frontend-return-url.com"  # Specify your frontend return URL
