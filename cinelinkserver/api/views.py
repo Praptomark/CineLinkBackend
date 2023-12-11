@@ -214,8 +214,8 @@ class CartAddAPIView(APIView): # For Seat to Cart
 
     def post(self, request, *args, **kwargs):
         try:
-            seats_id = request.data.get('seats_id')
-            seat = Seats.objects.get(pk=seats_id)
+            seat_id = request.data.get('seat_id')
+            seat = Seats.objects.get(pk=seat_id)
         except Seats.DoesNotExist:
             return Response({"error": "Seat not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -234,7 +234,7 @@ class CartDeleteAPIView(DestroyAPIView):
     def delete(self, request, *args, **kwargs):
         try:
             # Extracting Seats id from the JSON body
-            seat_id = request.data.get('seats_id')
+            seat_id = request.data.get('seat_id')
 
             # Retrieving the Cart object based on user and seat
             cart = Cart.objects.get(user=request.user, seat__id=seat_id)
