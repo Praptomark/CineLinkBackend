@@ -41,7 +41,7 @@ class CartSerializer(serializers.Serializer):
 
 class BookedSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    user = serializers.PrimaryKeyRelatedField(queryset=models.User.objects.all())
+    user = UserSerializer()
     seat = SeatSerializer()
     ticket_number = serializers.CharField(max_length=15)
 
