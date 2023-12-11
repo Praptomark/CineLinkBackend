@@ -278,7 +278,7 @@ class BookedListView(ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Filter Booked instances based on the authenticated user
+        # Filter bookings for the current authenticated user
         return Booked.objects.filter(user=self.request.user)
 
 class BookedDeleteAPIView(APIView):
