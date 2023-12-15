@@ -4,6 +4,9 @@ import random
 import string
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
+from datetime import datetime
+
 
 # Create your models here.
 ####################################################################################################
@@ -34,6 +37,17 @@ class Schedules(models.Model):
     show_date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
+
+    def is_expired(self):
+        current_datetime = timezone.now()
+        schedule_datetime = datetime.combine(self.show_date, self.end_time)
+        schedule_datetime = timezone.make_aware(schedule_datetime)  # Convert to aware datetime
+        return current_datetime > schedule_datetime
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.is_expired():
+            self.delete()
 
     def __str__(self) -> str:
         return f"{self.pk} - {self.movie.title} - {self.hallroom.hallroom_name} - Time:({self.start_time} - {self.end_time})"
